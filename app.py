@@ -10,7 +10,6 @@ API_ID = 33159667
 API_HASH = '5ec5f0d4bef6143e3549d925b3ee2c32'
 BOT_OBJETIVO = '@KRONOS_VIP_BOT'
 
-# Intentamos leer la sesión guardada si existe
 if os.path.exists("sesion_string.txt"):
     with open("sesion_string.txt", "r") as f:
         CADENA_SESION = f.read().strip()
@@ -29,7 +28,6 @@ def conectar():
     if not telefono:
         return "Falta el telefono. Usa: /conectar?telefono=+51942978154"
     
-    # Crea un script temporal para pedir el código de forma limpia
     with open("temp_login.py", "w") as f:
         f.write(f"""
 import asyncio
@@ -41,29 +39,28 @@ async def main():
     await client.connect()
     send = await client.send_code_request('{telefono}')
     with open('phone_code_hash.txt', 'w') as fh:
-        fh.write(send.phone_code_hash + ',' + '{telefono}')
+        fh.write(send.phone_code_hash)
     print('OK')
 
 asyncio.run(main())
 """)
     os.system("python temp_login.py")
-    return "Codigo enviado a tu Telegram 💬. Ahora usa: /codigo?numero=TU_CODIGO"
+    return "Codigo enviado a tu Telegram 💬. En cuanto te llegue, usa la ruta /codigo mandando telefono y numero."
 
 @app.route("/codigo")
 def verificar_codigo():
     numero_codigo = request.args.get("numero", "").strip()
-    if not numero_codigo:
-        return "Falta el codigo. Usa: /codigo?numero=12345"
+    telefono = request.args.get("telefono", "").strip()
+    
+    if not numero_codigo or not telefono:
+        return "Faltan datos. Usa: /codigo?telefono=+51942978154&numero=12345"
     
     if not os.path.exists("phone_code_hash.txt"):
-        return "Primero debes enviar tu telefono en /conectar"
+        return "Error: No se encontro la solicitud anterior. Primero ve a /conectar"
     
     with open("phone_code_hash.txt", "r") as f:
-        data = f.read().strip().split(",")
-        phone_code_hash = data[0]
-        telefono = data[1]
+        phone_code_hash = f.read().strip()
 
-    # Script temporal para verificar el código y guardar la sesión
     with open("temp_verify.py", "w") as f:
         f.write(f"""
 import asyncio
@@ -71,13 +68,17 @@ from telethon import TelegramClient
 from telethon.sessions import StringSession
 
 async def main():
-    client = TelegramClient(StringSession(), {API_ID}, '{API_HASH}')
-    await client.connect()
-    await client.sign_in('{telefono}', '{numero_codigo}', phone_code_hash='{phone_code_hash}')
-    string = client.session.save()
-    with open('sesion_string.txt', 'w') as fs:
-        fs.write(string)
-    print('OK')
+    try:
+        client = TelegramClient(StringSession(), {API_ID}, '{API_HASH}')
+        await client.connect()
+        await client.sign_in('{telefono}', '{numero_codigo}', phone_code_hash='{phone_code_hash}')
+        string = client.session.save()
+        with open('sesion_string.txt', 'w') as fs:
+            fs.write(string)
+        print('OK')
+    except Exception as e:
+        with open('error_verify.txt', 'w') as fe:
+            fe.write(str(e))
 
 asyncio.run(main())
 """)
@@ -89,7 +90,11 @@ asyncio.run(main())
             CADENA_SESION = fs.read().strip()
         return "¡CONECTADO EXITOSAMENTE! 🎉 Tu cuenta ya es el puente. Ya puedes usar /tel"
     else:
-        return "Error al verificar el codigo. Intentalo de nuevo."
+        error_msg = ""
+        if os.path.exists("error_verify.txt"):
+            with open("error_verify.txt", "r") as fe:
+                error_msg = fe.read().strip()
+        return f"Error al verificar el codigo: {error_msg}. Intentalo de nuevo pidiendo otro codigo."
 
 @app.route("/tel")
 def buscar_telefono():
