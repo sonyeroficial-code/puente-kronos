@@ -2,18 +2,33 @@ from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
+BASE = {
+    "942978154": "Nombre Demo Autorizado",
+    "999999999": "Juan Pérez Demo"
+}
+
 @app.route("/")
 def home():
     return "Servidor funcionando ✅"
 
 @app.route("/buscar")
 def buscar():
-    numero = request.args.get("numero", "")
+    numero = request.args.get("numero", "").strip()
+
+    titular = BASE.get(numero)
+
+    if titular:
+        return jsonify({
+            "ok": True,
+            "numero": numero,
+            "titular": titular
+        })
+
     return jsonify({
-        "ok": True,
+        "ok": False,
         "numero": numero,
-        "mensaje": "Consulta recibida"
+        "mensaje": "No encontrado"
     })
 
-app.run(host="0.0.0.0", port=5000)
-# actualizado
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
