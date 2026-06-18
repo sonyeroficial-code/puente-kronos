@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 from telethon import TelegramClient
-from telethon.sessions import StringSession # <--- Cambiamos a sesión de texto
+from telethon.sessions import StringSession
 import asyncio
 
 app = Flask(__name__)
@@ -9,9 +9,8 @@ API_ID = 33159667
 API_HASH = '5ec5f0d4bef6143e3549d925b3ee2c32'
 BOT_OBJETIVO = '@KRONOS_VIP_BOT'
 
-# PEGA AQUÍ EL TEXTO LARGO QUE CONSEGUISTE EN EL PASO 1
-# Debe quedar guardado dentro de las comillas simples
-SESION_STRING = 'pega_aqui_todo_el_texto_largo_que_copiaste'
+# ⚠️ PEGA AQUÍ TU STRING SESSION EN LUGAR DE ESTE TEXTO
+CADENA_DE_SESION = 'pega_aqui_todo_el_texto_largo_de_tu_sesion'
 
 @app.route("/")
 def hogar():
@@ -28,16 +27,18 @@ def buscar_telefono():
     asyncio.set_event_loop(loop)
     
     try:
-        # Iniciamos sesión directamente con el String sin pedir códigos
-        client = TelegramClient(StringSession(SESION_STRING), API_ID, API_HASH)
+        # El puente inicia sesión directamente usando el texto de sesión guardado
+        client = TelegramClient(StringSession(CADENA_DE_SESION), API_ID, API_HASH)
         loop.run_until_complete(client.connect())
         
+        # Le envía el comando al bot objetivo
         comando = f"/tel {numero}"
         loop.run_until_complete(client.send_message(BOT_OBJETIVO, comando))
         
-        # Esperamos 3 segundos la respuesta del bot de Kronos
+        # Espera 3 segundos a que responda
         loop.run_until_complete(asyncio.sleep(3)) 
         
+        # Lee el último mensaje recibido
         mensajes = loop.run_until_complete(client.get_messages(BOT_OBJETIVO, limit=1))
         respuesta_bot = mensajes[0].text if mensajes else "Sin respuesta"
         
