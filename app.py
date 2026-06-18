@@ -3,8 +3,8 @@ from flask import Flask, request, jsonify
 app = Flask(__name__)
 
 BASE = {
-    "942978154": "Nombre Demo Autorizado",
-    "999999999": "Juan Pérez Demo"
+    "942978154": "prueba,
+    "999999999": "Juan "
 }
 
 @app.route("/")
